@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: myapp
-        image: registry.gitlab.com/prabhu31297/devops-project:latest
+        image: registry.github.com/prabhu31297/devops_aws_argocd:latest
         ports:
         - containerPort: 80
 ---
