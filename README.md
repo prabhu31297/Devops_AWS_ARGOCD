@@ -38,10 +38,4 @@ Developer → GitLab CI/CD → Docker Registry → ArgoCD → Kubernetes (AWS EC
 - Infrastructure as Code — entire AWS setup in Terraform
 ```
 
----
 
-## Topics/Tags To Add On GitHub:
-```
-kubernetes  terraform  aws  argocd  gitlab-ci  
-docker  devops  gitops  k3s  cicd  
-infrastructure-as-code  kubernetes-cluster
