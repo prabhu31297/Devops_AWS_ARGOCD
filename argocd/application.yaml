@@ -1,0 +1,35 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gitops-app
+  namespace: argocd
+  # Cascade-delete all managed resources when this Application is deleted
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: gitops-pipeline
+
+  source:
+    # Replace with the URL of this repository
+    repoURL: https://github.com/prabhu31297/Devops_AWS_ARGOCD.git
+    targetRevision: main
+    path: k8s
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: gitops-app
+
+  syncPolicy:
+    automated:
+      prune: true      # Delete resources removed from Git
+      selfHeal: true   # Revert manual changes in the cluster
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

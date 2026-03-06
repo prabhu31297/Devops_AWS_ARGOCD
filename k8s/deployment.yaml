@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gitops-app
+  namespace: gitops-app
+  labels:
+    app: gitops-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: gitops-app
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: gitops-app
+        app.kubernetes.io/version: "latest"  # Updated by CI pipeline alongside the image tag
+    spec:
+      # Pull from ECR using the node's IAM instance profile
+      imagePullSecrets: []
+      containers:
+        - name: gitops-app
+          # Image tag is updated by the CI pipeline via `sed` or `yq`
+          image: PLACEHOLDER_ECR_REGISTRY/gitops-app:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: APP_ENV
+              value: "production"
+            - name: APP_VERSION
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['app.kubernetes.io/version']
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 1000
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+      securityContext:
+        fsGroup: 1000

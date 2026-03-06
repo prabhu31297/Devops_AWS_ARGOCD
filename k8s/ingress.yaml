@@ -1,0 +1,21 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: gitops-app
+  namespace: gitops-app
+  annotations:
+    # nginx ingress annotations (adjust for Traefik or other controllers)
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: gitops-app.example.com  # Replace with your domain
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: gitops-app
+                port:
+                  number: 80

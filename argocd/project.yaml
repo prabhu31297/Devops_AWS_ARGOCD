@@ -1,0 +1,41 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: gitops-pipeline
+  namespace: argocd
+  # Prevent deletion of the project while apps still reference it
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  description: Production GitOps pipeline project
+
+  # Source repositories allowed in this project
+  sourceRepos:
+    - "*" # Restrict to your Git repo URL in production
+
+  # Allowed deployment destinations
+  destinations:
+    - namespace: gitops-app
+      server: https://kubernetes.default.svc
+
+  # Allowed cluster-scoped resource kinds (none for this project)
+  clusterResourceWhitelist: []
+
+  # Allowed namespace-scoped resource kinds
+  namespaceResourceWhitelist:
+    - group: "apps"
+      kind: Deployment
+    - group: ""
+      kind: Service
+    - group: ""
+      kind: ConfigMap
+    - group: ""
+      kind: Namespace
+    - group: "networking.k8s.io"
+      kind: Ingress
+
+  roles:
+    - name: read-only
+      description: Read-only access for auditors
+      policies:
+        - p, proj:gitops-pipeline:read-only, applications, get, gitops-pipeline/*, allow

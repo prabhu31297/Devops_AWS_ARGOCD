@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# K3s node bootstrapping user-data script
+# Rendered by Terraform — do not edit manually.
+set -euo pipefail
+
+# ── System updates ────────────────────────────────────────────────────────────
+apt-get update -y
+apt-get install -y curl unzip awscli
+
+# ── Install K3s ───────────────────────────────────────────────────────────────
+curl -sfL https://get.k3s.io | sh -s - server \
+  --disable traefik \
+  --write-kubeconfig-mode 644
+
+# Wait for K3s to be ready
+until kubectl get nodes 2>/dev/null | grep -q " Ready"; do
+  echo "Waiting for K3s node to be ready..."
+  sleep 5
+done
+
+# ── Configure ECR credential helper ──────────────────────────────────────────
+# K3s uses containerd; configure ECR auth via Amazon ECR Credential Helper
+cat > /etc/rancher/k3s/registries.yaml <<EOF
+configs:
+  "${ecr_registry}":
+    auth: {}
+EOF
+
+# ── Install Helm ──────────────────────────────────────────────────────────────
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+# ── Install ArgoCD ────────────────────────────────────────────────────────────
+kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
+kubectl apply -n argocd \
+  -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+
+# Patch ArgoCD server to use LoadBalancer (or NodePort if LB not available)
+kubectl patch svc argocd-server -n argocd \
+  -p '{"spec":{"type":"NodePort","ports":[{"port":443,"targetPort":8080,"nodePort":30443}]}}'
+
+echo "Bootstrap complete. ArgoCD is installing..."
